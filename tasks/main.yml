@@ -1,40 +1,39 @@
 ---
-- block:
-
+- name: Create timer and service units
+  when: timers is defined
+  block:
     - name: Failing when timer_command is undefined
-      fail:
-          msg: Varible timer_command is not defined
+      ansible.builtin.fail:
+        msg: Varible timer_command is not defined
       when: item.value.timer_command is undefined
       with_dict: "{{ timers }}"
 
     - name: Uploading service file
-      template:
-          src: service.j2
-          dest: "{{ systemd_base_path | default('/etc/systemd/system') }}/{{ item.key }}.service"
-          owner: "{{ item.value.timer_user | default('root') }}"
-          group: "{{ item.value.timer_user | default('root') }}"
-          mode: 0644
+      ansible.builtin.template:
+        src: service.j2
+        dest: "{{ systemd_base_path | default('/etc/systemd/system') }}/{{ item.key }}.service"
+        owner: "{{ item.value.timer_user | default('root') }}"
+        group: "{{ item.value.timer_user | default('root') }}"
+        mode: "0644"
       with_dict: "{{ timers }}"
       notify: Reload systemd
 
     - name: Uploading timer file
-      template:
-          src: timer.j2
-          dest: "{{ systemd_base_path | default('/etc/systemd/system') }}/{{ item.key }}.timer"
-          owner: "{{ item.value.timer_user | default('root') }}"
-          group: "{{ item.value.timer_user | default('root') }}"
-          mode: 0644
+      ansible.builtin.template:
+        src: timer.j2
+        dest: "{{ systemd_base_path | default('/etc/systemd/system') }}/{{ item.key }}.timer"
+        owner: "{{ item.value.timer_user | default('root') }}"
+        group: "{{ item.value.timer_user | default('root') }}"
+        mode: "0644"
       with_dict: "{{ timers }}"
       notify: Reload systemd
 
     - name: Enabling timers
-      systemd:
-          name: "{{ item.key }}.timer"
-          state: restarted
-          enabled: true
-          masked: false
-          daemon_reload: true
-          scope: "{{ systemd_scope | default('system') }}"
+      ansible.builtin.systemd:
+        name: "{{ item.key }}.timer"
+        state: restarted
+        enabled: true
+        masked: false
+        daemon_reload: true
+        scope: "{{ systemd_scope | default('system') }}"
       with_dict: "{{ timers }}"
-
-  when: timers is defined
